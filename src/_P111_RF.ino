@@ -99,7 +99,7 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
                 if (rfReceiver->available())
                 {
                         Serial.print("RF recieved");
-                        int valuerf = rfReceiver->getReceivedValue();
+                        uint32_t valuerf = rfReceiver->getReceivedValue();
 
                         if (valuerf == 0) {
                                 Serial.print("Unknown encoding");
@@ -110,33 +110,12 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
                                 addLog(LOG_LEVEL_INFO, log);
                         } else {
                                 output(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
+                                UserVar.setUint32(event->TaskIndex, 0, valuerf);
 
-                                // UserVar[event->BaseVarIndex] = (valuerf & 0xFFFF);
-                                // UserVar[event->BaseVarIndex + 1] = ((valuerf >> 16) & 0xFFFF);
-
+                                addLog(LOG_LEVEL_INFO, "TaskIndex" + String(event->TaskIndex));
                                 String log = F("RF Code Recieved: ");
                                 log += String(valuerf);
                                 addLog(LOG_LEVEL_INFO, log);
-
-                                /*
-                                   Usage:
-                                   1=RFSEND
-                                   2=commando
-                                   3=repeat (if not set will use default settings)
-                                   4=bits (if not set will use default settings)
-
-                                                                    1      2              3  4
-                                   http://<ESP IP address>/control?cmd=RFSEND,blablacommando,10,24
-                                 */
-
-                                String url = String(Settings.Name) + "/control?cmd=RFSEND," + String(rfReceiver->getReceivedValue()) + ",1," + String(rfReceiver->getReceivedBitlength());
-                                String printString = F("To send this command, ");
-                                //addLog(LOG_LEVEL_INFO, printString);
-                                printString += F("use this: <a href=\"http://");
-                                printString += url;
-                                printString += F("\">URL</a>");
-                                addLog(LOG_LEVEL_INFO, printString);
-
                                 sendData(event);
                         }
                         rfReceiver->resetAvailable();
