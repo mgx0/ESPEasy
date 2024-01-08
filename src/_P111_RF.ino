@@ -40,7 +40,7 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
         {
                 Device[++deviceCount].Number = PLUGIN_ID_111;
                 Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
-                Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_LONG;
+                Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_ULONG;
                 Device[deviceCount].Ports = 0;
                 Device[deviceCount].InverseLogicOption = false;
                 Device[deviceCount].FormulaOption = false;
@@ -111,8 +111,8 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
                         } else {
                                 output(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
 
-                                UserVar[event->BaseVarIndex] = (valuerf & 0xFFFF);
-                                UserVar[event->BaseVarIndex + 1] = ((valuerf >> 16) & 0xFFFF);
+                                // UserVar[event->BaseVarIndex] = (valuerf & 0xFFFF);
+                                // UserVar[event->BaseVarIndex + 1] = ((valuerf >> 16) & 0xFFFF);
 
                                 String log = F("RF Code Recieved: ");
                                 log += String(valuerf);
