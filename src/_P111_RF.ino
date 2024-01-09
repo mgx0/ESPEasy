@@ -1,11 +1,11 @@
 #include "_Plugin_Helper.h"
-#ifdef USES_P111
+#ifdef USES_P160
 
 //#######################################################################################################
-//#################################### Plugin 111: Input RF #############################################
+//#################################### Plugin 160: Input RF #############################################
 //#######################################################################################################
 /*
-   Version: 2.0
+   Version: 3.0
    Description: use this script to recieve RF with a cheap MX-05V alike receiver
    Author: S4nder
    Copyright: (c) 2015-2016 Sander Pleijers (s4nder)
@@ -21,16 +21,16 @@
 #include <RCSwitch.h>
 RCSwitch *rfReceiver;
 
-#define PLUGIN_111
-#define PLUGIN_ID_111         111
-#define PLUGIN_NAME_111       "RF Receiver - MX-05V alike receiver"
-#define PLUGIN_ValueNAME1_111 "RF"
+#define PLUGIN_160
+#define PLUGIN_ID_160         160
+#define PLUGIN_NAME_160       "RF Receiver - MX-05V alike receiver"
+#define PLUGIN_ValueNAME1_160 "RF"
 
 #ifndef USES_P016
  int irReceiver = 0; // make sure it has value even if plugin not found
 #endif
 
-boolean Plugin_111(byte function, struct EventStruct *event, String& string)
+boolean Plugin_160(byte function, struct EventStruct *event, String& string)
 {
         boolean success = false;
 
@@ -38,7 +38,7 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
         {
         case PLUGIN_DEVICE_ADD:
         {
-                Device[++deviceCount].Number = PLUGIN_ID_111;
+                Device[++deviceCount].Number = PLUGIN_ID_160;
                 Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
                 Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_ULONG;
                 Device[deviceCount].Ports = 0;
@@ -53,13 +53,13 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
 
         case PLUGIN_GET_DEVICENAME:
         {
-                string = F(PLUGIN_NAME_111);
+                string = F(PLUGIN_NAME_160);
                 break;
         }
 
         case PLUGIN_GET_DEVICEVALUENAMES:
         {
-                strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[0], PSTR(PLUGIN_ValueNAME1_111));
+                strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[0], PSTR(PLUGIN_ValueNAME1_160));
                 break;
         }
 
@@ -111,34 +111,31 @@ boolean Plugin_111(byte function, struct EventStruct *event, String& string)
                         } else {
                                 output(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
 
-                                // UserVar[event->BaseVarIndex] = (valuerf & 0xFFFF);
-                                // UserVar[event->BaseVarIndex + 1] = ((valuerf >> 16) & 0xFFFF);
-                                UserVar.setUint32(event->TaskIndex, 0, valuerf);
+                                // temp woraround, ESP Easy framework does not currently prepare this...
+                                // taken from _P040
+                                taskIndex_t index = INVALID_TASK_INDEX;
+                                constexpr pluginID_t PLUGIN_ID_P160_RF(PLUGIN_ID_160);
+                                for (taskIndex_t y = 0; y < TASKS_MAX; y++)
+                                        if (Settings.getPluginID_for_task(y) == PLUGIN_ID_P160_RF)
+                                        index = y;
+                                const deviceIndex_t DeviceIndex = getDeviceIndex_from_TaskIndex(index);
+                                if (!validDeviceIndex(DeviceIndex)) {
+                                        break;
+                                }
+                                event->setTaskIndex(index);
+                                if (!validUserVarIndex(event->BaseVarIndex)) {
+                                        break;
+                                }
+                                checkDeviceVTypeForTask(event);
+                                // endof workaround
 
+                                UserVar.setSensorTypeLong(event->TaskIndex, valuerf);
+                                sendData(event);
                                 String log = F("RF Code Recieved: ");
                                 log += String(valuerf);
                                 addLog(LOG_LEVEL_INFO, log);
 
-                                /*
-                                   Usage:
-                                   1=RFSEND
-                                   2=commando
-                                   3=repeat (if not set will use default settings)
-                                   4=bits (if not set will use default settings)
 
-                                                                    1      2              3  4
-                                   http://<ESP IP address>/control?cmd=RFSEND,blablacommando,10,24
-                                 */
-
-                                String url = String(Settings.Name) + "/control?cmd=RFSEND," + String(rfReceiver->getReceivedValue()) + ",1," + String(rfReceiver->getReceivedBitlength());
-                                String printString = F("To send this command, ");
-                                //addLog(LOG_LEVEL_INFO, printString);
-                                printString += F("use this: <a href=\"http://");
-                                printString += url;
-                                printString += F("\">URL</a>");
-                                addLog(LOG_LEVEL_INFO, printString);
-
-                                sendData(event);
                         }
                         rfReceiver->resetAvailable();
                 }
