@@ -8,6 +8,7 @@
     Version: 3.0
     Description: use this script to recieve RF with a cheap MX-05V alike receiver
     Author: S4nder
+    Updated by: https://github.com/mgx0 <- updated for ESPEasy ~20231225
     Copyright: (c) 2015-2016 Sander Pleijers (s4nder)
     License: MIT
     License URI: http://en.wikipedia.org/wiki/MIT_License
