@@ -26,7 +26,7 @@ RCSwitch *rfReceiver;
 #define PLUGIN_ValueNAME1_160 "RF"
 
 #ifndef USES_P016
- int irReceiver = 0; // make sure it has value even if plugin not found
+    int irReceiver = 0; // make sure it has value even if plugin not found
 #endif
 
 boolean Plugin_160(byte function, struct EventStruct *event, String& string)
@@ -35,117 +35,117 @@ boolean Plugin_160(byte function, struct EventStruct *event, String& string)
 
     switch (function)
     {
-    case PLUGIN_DEVICE_ADD:
-    {
-            Device[++deviceCount].Number = PLUGIN_ID_160;
-            Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
-            Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_ULONG;
-            Device[deviceCount].Ports = 0;
-            Device[deviceCount].InverseLogicOption = false;
-            Device[deviceCount].FormulaOption = false;
-            Device[deviceCount].ValueCount = 1;
-            Device[deviceCount].SendDataOption = true;
-            Device[deviceCount].TimerOption = false;
-            Device[deviceCount].GlobalSyncOption = true;
+        case PLUGIN_DEVICE_ADD:
+        {
+                Device[++deviceCount].Number = PLUGIN_ID_160;
+                Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
+                Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_ULONG;
+                Device[deviceCount].Ports = 0;
+                Device[deviceCount].InverseLogicOption = false;
+                Device[deviceCount].FormulaOption = false;
+                Device[deviceCount].ValueCount = 1;
+                Device[deviceCount].SendDataOption = true;
+                Device[deviceCount].TimerOption = false;
+                Device[deviceCount].GlobalSyncOption = true;
+                break;
+        }
+
+        case PLUGIN_GET_DEVICENAME:
+        {
+            string = F(PLUGIN_NAME_160);
             break;
-    }
+        }
 
-    case PLUGIN_GET_DEVICENAME:
-    {
-        string = F(PLUGIN_NAME_160);
-        break;
-    }
+        case PLUGIN_GET_DEVICEVALUENAMES:
+        {
+            strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[0], PSTR(PLUGIN_ValueNAME1_160));
+            break;
+        }
 
-    case PLUGIN_GET_DEVICEVALUENAMES:
-    {
-        strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[0], PSTR(PLUGIN_ValueNAME1_160));
-        break;
-    }
-
-    case PLUGIN_INIT:
-    {
-        int rfPin = Settings.TaskDevicePin1[event->TaskIndex];
-        if (irReceiver != 0) {
-            String log = F("BUG: Cannot use IR reciever and RF reciever at the same time!");
-            Serial.print(log);
-            addLog(LOG_LEVEL_INFO, log);
-            delete rfReceiver;
-            rfReceiver = 0;
-        } else {
-            if (rfPin != -1)
-            {
-                Serial.println("INIT: RF433 RX created!");
-                rfReceiver = new RCSwitch();
-                rfReceiver->enableReceive(rfPin);
-            }
-            if (rfReceiver != 0 && rfPin == -1)
-            {
-                Serial.println("INIT: RF433 RX removed!");
-                rfReceiver->resetAvailable();
+        case PLUGIN_INIT:
+        {
+            int rfPin = Settings.TaskDevicePin1[event->TaskIndex];
+            if (irReceiver != 0) {
+                String log = F("BUG: Cannot use IR reciever and RF reciever at the same time!");
+                Serial.print(log);
+                addLog(LOG_LEVEL_INFO, log);
                 delete rfReceiver;
                 rfReceiver = 0;
-            }
-        }
-        success = true;
-        break;
-    }
-
-    case PLUGIN_ONCE_A_SECOND:
-    {
-        if (irReceiver != 0) break;
-        if (rfReceiver->available())
-        {
-            Serial.print("RF recieved");
-            int valuerf = rfReceiver->getReceivedValue();
-
-            if (valuerf == 0) {
-                Serial.print("Unknown encoding");
-
-                String log = F("RF Code Recieved: ");
-                log += String(valuerf);
-                log += " =Unknown encoding";
-                addLog(LOG_LEVEL_INFO, log);
             } else {
-                // temp woraround, ESP Easy framework does not currently prepare this...
-                // taken from _P040
-                taskIndex_t index = INVALID_TASK_INDEX;
-                constexpr pluginID_t PLUGIN_ID_P160_RF(PLUGIN_ID_160);
-                for (taskIndex_t y = 0; y < TASKS_MAX; y++){
-                    if (Settings.getPluginID_for_task(y) == PLUGIN_ID_P160_RF){
-                        index = y;
-                    }
+                if (rfPin != -1)
+                {
+                    Serial.println("INIT: RF433 RX created!");
+                    rfReceiver = new RCSwitch();
+                    rfReceiver->enableReceive(rfPin);
                 }
-
-                const deviceIndex_t DeviceIndex = getDeviceIndex_from_TaskIndex(index);
-                if (!validDeviceIndex(DeviceIndex)) {
-                    break;
+                if (rfReceiver != 0 && rfPin == -1)
+                {
+                    Serial.println("INIT: RF433 RX removed!");
+                    rfReceiver->resetAvailable();
+                    delete rfReceiver;
+                    rfReceiver = 0;
                 }
-
-                event->setTaskIndex(index);
-                if (!validUserVarIndex(event->BaseVarIndex)) {
-                    break;
-                }
-
-                checkDeviceVTypeForTask(event);
-                // endof workaround
-
-                // fill the output data
-                UserVar.setSensorTypeLong(event->TaskIndex, valuerf);
-
-                // throw some debug info to serial
-                serial_debug_out(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
-                String log = F("RF Code Recieved: ");
-                log += String(valuerf);
-                addLog(LOG_LEVEL_INFO, log);
-
-                // emit event
-                sendData(event);
             }
-            rfReceiver->resetAvailable();
+            success = true;
+            break;
         }
-        success = true;
-        break;
-    }
+
+        case PLUGIN_ONCE_A_SECOND:
+        {
+            if (irReceiver != 0) break;
+            if (rfReceiver->available())
+            {
+                Serial.print("RF recieved");
+                int valuerf = rfReceiver->getReceivedValue();
+
+                if (valuerf == 0) {
+                    Serial.print("Unknown encoding");
+
+                    String log = F("RF Code Recieved: ");
+                    log += String(valuerf);
+                    log += " =Unknown encoding";
+                    addLog(LOG_LEVEL_INFO, log);
+                } else {
+                    // *** temp woraround, ESP Easy framework does not currently prepare this...
+                    // taken from _P040
+                    taskIndex_t index = INVALID_TASK_INDEX;
+                    constexpr pluginID_t PLUGIN_ID_P160_RF(PLUGIN_ID_160);
+                    for (taskIndex_t y = 0; y < TASKS_MAX; y++){
+                        if (Settings.getPluginID_for_task(y) == PLUGIN_ID_P160_RF){
+                            index = y;
+                        }
+                    }
+
+                    const deviceIndex_t DeviceIndex = getDeviceIndex_from_TaskIndex(index);
+                    if (!validDeviceIndex(DeviceIndex)) {
+                        break;
+                    }
+
+                    event->setTaskIndex(index);
+                    if (!validUserVarIndex(event->BaseVarIndex)) {
+                        break;
+                    }
+
+                    checkDeviceVTypeForTask(event);
+                    // *** end of workaround
+
+                    // fill the output data
+                    UserVar.setSensorTypeLong(event->TaskIndex, valuerf);
+
+                    // throw some debug info to serial
+                    serial_debug_out(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
+                    String log = F("RF Code Recieved: ");
+                    log += String(valuerf);
+                    addLog(LOG_LEVEL_INFO, log);
+
+                    // emit event
+                    sendData(event);
+                }
+                rfReceiver->resetAvailable();
+            }
+            success = true;
+            break;
+        }
     }
     return success;
 }
