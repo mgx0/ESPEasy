@@ -109,33 +109,40 @@ boolean Plugin_160(byte function, struct EventStruct *event, String& string)
                                 log += " =Unknown encoding";
                                 addLog(LOG_LEVEL_INFO, log);
                         } else {
-                                output(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
-
                                 // temp woraround, ESP Easy framework does not currently prepare this...
                                 // taken from _P040
                                 taskIndex_t index = INVALID_TASK_INDEX;
                                 constexpr pluginID_t PLUGIN_ID_P160_RF(PLUGIN_ID_160);
-                                for (taskIndex_t y = 0; y < TASKS_MAX; y++)
-                                        if (Settings.getPluginID_for_task(y) == PLUGIN_ID_P160_RF)
-                                        index = y;
+                                for (taskIndex_t y = 0; y < TASKS_MAX; y++){
+                                        if (Settings.getPluginID_for_task(y) == PLUGIN_ID_P160_RF){
+                                                index = y;
+                                        }
+                                }
+
                                 const deviceIndex_t DeviceIndex = getDeviceIndex_from_TaskIndex(index);
                                 if (!validDeviceIndex(DeviceIndex)) {
                                         break;
                                 }
+
                                 event->setTaskIndex(index);
                                 if (!validUserVarIndex(event->BaseVarIndex)) {
                                         break;
                                 }
+
                                 checkDeviceVTypeForTask(event);
                                 // endof workaround
 
+                                // fill the output data
                                 UserVar.setSensorTypeLong(event->TaskIndex, valuerf);
-                                sendData(event);
+
+                                // throw some debug info to serial
+                                serial_debug_out(rfReceiver->getReceivedValue(), rfReceiver->getReceivedBitlength(), rfReceiver->getReceivedDelay(), rfReceiver->getReceivedRawdata(), rfReceiver->getReceivedProtocol());
                                 String log = F("RF Code Recieved: ");
                                 log += String(valuerf);
                                 addLog(LOG_LEVEL_INFO, log);
 
-
+                                // emit event
+                                sendData(event);
                         }
                         rfReceiver->resetAvailable();
                 }
@@ -150,7 +157,7 @@ boolean Plugin_160(byte function, struct EventStruct *event, String& string)
 static const char* bin2tristate(const char* bin);
 static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
 
-void output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
+void serial_debug_out(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
 
         if (decimal == 0) {
                 Serial.print("Unknown encoding.");
@@ -159,15 +166,15 @@ void output(unsigned long decimal, unsigned int length, unsigned int delay, unsi
                 Serial.print("Decimal: ");
                 Serial.print(decimal);
                 Serial.print(" (");
-                Serial.print( length );
-                Serial.print("Bit) Binary: ");
-                Serial.print( b );
-                Serial.print(" Tri-State: ");
-                Serial.print( bin2tristate( b) );
-                Serial.print(" PulseLength: ");
+                Serial.print(length );
+                Serial.print("Bit)\nBinary: ");
+                Serial.print(b);
+                Serial.print("\nTri-State: ");
+                Serial.print(bin2tristate( b) );
+                Serial.print("\nPulseLength: ");
                 Serial.print(delay);
                 Serial.print(" microseconds");
-                Serial.print(" Protocol: ");
+                Serial.print("\nProtocol: ");
                 Serial.println(protocol);
         }
 
@@ -206,13 +213,13 @@ static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength) {
         unsigned int i=0;
 
         while (Dec > 0) {
-                bin[32+i++] = ((Dec & 1) > 0) ? '1' : '0';
+                bin[32 + i++] = ((Dec & 1) > 0) ? '1' : '0';
                 Dec = Dec >> 1;
         }
 
         for (unsigned int j = 0; j< bitLength; j++) {
                 if (j >= bitLength - i) {
-                        bin[j] = bin[ 31 + i - (j - (bitLength - i)) ];
+                        bin[j] = bin[31 + i - (j - (bitLength - i)) ];
                 } else {
                         bin[j] = '0';
                 }
